@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Storybook Demo - The Magic Castle</title>
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    
+    #instructions {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 10px;
+      z-index: 1000;
+      text-align: center;
+      max-width: 90%;
+    }
+    
+    #instructions h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+    }
+    
+    #instructions p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    
+    #marker-info {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px 20px;
+      border-radius: 8px;
+      z-index: 1000;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    #marker-info a {
+      color: #0066cc;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Instructions Overlay -->
+  <div id="instructions">
+    <h3>📖 AR Storybook Demo</h3>
+    <p>🎯 Point your camera at the HIRO marker</p>
+    <p>👆 Tap objects to interact!</p>
+  </div>
+  
+  <!-- Marker Download Info -->
+  <div id="marker-info">
+    📥 <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">Download HIRO Marker Here</a>
+    <br>(Print or display on another screen)
+  </div>
+
+  <!-- AR Scene -->
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true;">
+    
+    <!-- Assets -->
+    <a-assets>
+      <audio id="welcome-sound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
+      <audio id="tap-sound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
+    </a-assets>
+    
+    <!-- HIRO Marker Content -->
+    <a-marker preset="hiro" id="hiro-marker">
+      
+      <!-- Floating Castle (Main Character) -->
+      <a-box 
+        id="castle"
+        class="clickable"
+        position="0 0.5 0" 
+        rotation="0 45 0"
+        scale="0.8 1 0.8"
+        color="#8B4513"
+        shadow>
+        <!-- Castle tower -->
+        <a-cone 
+          position="0 1 0" 
+          color="#FF6347" 
+          radius-bottom="0.5" 
+          radius-top="0.1" 
+          height="0.6"
+          rotation="0 0 0">
+        </a-cone>
+      </a-box>
+      
+      <!-- Rotating Star (Magic element) -->
+      <a-octahedron
+        id="star"
+        class="clickable"
+        position="1.5 1 0"
+        radius="0.3"
+        color="#FFD700"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear"
+        animation__scale="property: scale; to: 1.3 1.3 1.3; dir: alternate; loop: true; dur: 1000">
+      </a-octahedron>
+      
+      <!-- Bouncing Ball (Interactive element) -->
+      <a-sphere
+        id="ball"
+        class="clickable"
+        position="-1.5 0.5 0"
+        radius="0.3"
+        color="#4169E1"
+        animation__bounce="property: position; to: -1.5 1.5 0; dir: alternate; loop: true; dur: 800; easing: easeInOutQuad">
+      </a-sphere>
+      
+      <!-- Story Title -->
+      <a-text 
+        value="The Magic Castle" 
+        position="0 2 0" 
+        align="center"
+        color="#FFFFFF"
+        width="4"
+        font="roboto"
+        animation="property: position; to: 0 2.3 0; dir: alternate; loop: true; dur: 2000">
+      </a-text>
+      
+      <!-- Subtitle -->
+      <a-text 
+        value="Tap the objects!" 
+        position="0 -0.5 0" 
+        align="center"
+        color="#00FF00"
+        width="3"
+        scale="0.8 0.8 0.8">
+      </a-text>
+      
+      <!-- Ground plane -->
+      <a-plane 
+        position="0 0 0" 
+        rotation="-90 0 0" 
+        width="3" 
+        height="3" 
+        color="#90EE90" 
+        opacity="0.6">
+      </a-plane>
+      
+      <!-- Ambient light -->
+      <a-entity light="type: ambient; color: #FFF; intensity: 0.5"></a-entity>
+      <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="1 1 1"></a-entity>
+      
+    </a-marker>
+
+    <!-- Camera -->
+    <a-entity camera></a-entity>
+    
+  </a-scene>
+
+  <!-- Interaction Script -->
+  <script>
+    let markerDetected = false;
+    let soundPlayed = false;
+    
+    // Detect when marker is found
+    const marker = document.querySelector('#hiro-marker');
+    
+    marker.addEventListener('markerFound', function() {
+      console.log('Marker found!');
+      markerDetected = true;
+      
+      // Play welcome sound once
+      if (!soundPlayed) {
+        const welcomeSound = document.querySelector('#welcome-sound');
+        if (welcomeSound) {
+          welcomeSound.play();
+          soundPlayed = true;
+        }
+      }
+      
+      // Update instructions
+      document.querySelector('#instructions p').textContent = '✨ Magic detected! Tap the objects!';
+    });
+    
+    marker.addEventListener('markerLost', function() {
+      console.log('Marker lost!');
+      markerDetected = false;
+      document.querySelector('#instructions p').textContent = '🎯 Point camera back at the marker';
+    });
+    
+    // Make elements interactive
+    setTimeout(() => {
+      // Castle interaction
+      const castle = document.querySelector('#castle');
+      if (castle) {
+        castle.addEventListener('click', function() {
+          console.log('Castle clicked!');
+          // Play sound
+          document.querySelector('#tap-sound').play();
+          
+          // Change color
+          this.setAttribute('color', randomColor());
+          
+          // Spin animation
+          this.setAttribute('animation__spin', {
+            property: 'rotation',
+            to: '0 405 0',
+            dur: 1000,
+            easing: 'easeInOutQuad'
+          });
+          
+          // Show message
+          const text = document.querySelector('a-text[value="Tap the objects!"]');
+          text.setAttribute('value', '🏰 Castle activated!');
+          setTimeout(() => {
+            text.setAttribute('value', 'Tap the objects!');
+          }, 2000);
+        });
+      }
+      
+      // Star interaction
+      const star = document.querySelector('#star');
+      if (star) {
+        star.addEventListener('click', function() {
+          console.log('Star clicked!');
+          document.querySelector('#tap-sound').play();
+          
+          // Pulse effect
+          this.setAttribute('animation__pulse', {
+            property: 'scale',
+            to: '2 2 2',
+            dur: 500,
+            easing: 'easeOutQuad'
+          });
+          
+          setTimeout(() => {
+            this.setAttribute('scale', '1 1 1');
+          }, 500);
+          
+          const text = document.querySelector('a-text[value="Tap the objects!"]');
+          text.setAttribute('value', '⭐ Magic sparkle!');
+          setTimeout(() => {
+            text.setAttribute('value', 'Tap the objects!');
+          }, 2000);
+        });
+      }
+      
+      // Ball interaction
+      const ball = document.querySelector('#ball');
+      if (ball) {
+        ball.addEventListener('click', function() {
+          console.log('Ball clicked!');
+          document.querySelector('#tap-sound').play();
+          
+          // Jump higher
+          this.setAttribute('animation__jump', {
+            property: 'position',
+            to: '-1.5 2.5 0',
+            dur: 600,
+            easing: 'easeOutQuad'
+          });
+          
+          setTimeout(() => {
+            this.setAttribute('position', '-1.5 0.5 0');
+          }, 600);
+          
+          const text = document.querySelector('a-text[value="Tap the objects!"]');
+          text.setAttribute('value', '⚽ Ball bounced!');
+          setTimeout(() => {
+            text.setAttribute('value', 'Tap the objects!');
+          }, 2000);
+        });
+      }
+    }, 2000);
+    
+    // Helper function for random colors
+    function randomColor() {
+      const colors = ['#FF6347', '#FFD700', '#4169E1', '#32CD32', '#FF69B4', '#8B4513', '#FF8C00'];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+    
+    // Hide instructions after 10 seconds
+    setTimeout(() => {
+      const instructions = document.querySelector('#instructions');
+      instructions.style.opacity = '0';
+      instructions.style.transition = 'opacity 1s';
+      setTimeout(() => {
+        instructions.style.display = 'none';
+      }, 1000);
+    }, 10000);
+  </script>
+
+</body>
+</html>
