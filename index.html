@@ -1,425 +1,157 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-  <title>MindAR Storybook - The Magic Castle</title>
-  
-  <!-- MindAR Library -->
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindAR Demo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      font-family: 'Arial', sans-serif;
+      font-family: Arial, sans-serif;
     }
-    
+    #container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
     #instructions {
-      position: fixed;
+      position: absolute;
       top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.8);
       color: white;
-      padding: 20px 30px;
-      border-radius: 12px;
+      padding: 15px 25px;
+      border-radius: 10px;
       z-index: 1000;
       text-align: center;
       max-width: 90%;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
-    
     #instructions h3 {
       margin: 0 0 10px 0;
-      font-size: 20px;
-      color: #FFD700;
+      font-size: 18px;
     }
-    
     #instructions p {
-      margin: 8px 0;
+      margin: 5px 0;
       font-size: 14px;
-      line-height: 1.5;
     }
-    
-    #instructions .tip {
-      font-size: 12px;
-      color: #90EE90;
-      margin-top: 10px;
-      font-style: italic;
-    }
-    
-    #loading-screen {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      color: white;
-    }
-    
-    #loading-screen h2 {
-      font-size: 24px;
-      margin-bottom: 20px;
-    }
-    
-    .spinner {
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top: 4px solid white;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    #status {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.95);
-      padding: 12px 25px;
-      border-radius: 25px;
-      z-index: 1000;
-      font-size: 14px;
-      font-weight: bold;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      display: none;
-    }
-    
-    #status.active {
-      display: block;
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { transform: translateX(-50%) scale(1); }
-      50% { transform: translateX(-50%) scale(1.05); }
-    }
-    
-    .target-indicator {
+    #instructions a {
       color: #4CAF50;
+      text-decoration: none;
     }
-    
-    .scanning {
-      color: #FF9800;
+    .hide {
+      display: none;
     }
   </style>
 </head>
-
 <body>
-  <!-- Loading Screen -->
-  <div id="loading-screen">
-    <h2>🎨 Loading AR Experience...</h2>
-    <div class="spinner"></div>
-    <p style="margin-top: 20px; font-size: 14px;">Preparing your magical storybook</p>
+  <div id="container">
+    <div id="instructions">
+      <h3>📱 AR Image Tracking Demo</h3>
+      <p>Point your camera at this target image:</p>
+      <p><a href="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/targets/card.png" target="_blank">Download Target Image</a></p>
+      <p style="font-size: 12px; margin-top: 10px;">Or open the link and show it on another screen</p>
+    </div>
   </div>
 
-  <!-- Instructions Overlay -->
-  <div id="instructions">
-    <h3>✨ MindAR Storybook Demo</h3>
-    <p>📸 Point your camera at the <strong>target image</strong></p>
-    <p>👆 Tap objects to interact with the story!</p>
-    <p class="tip">💡 MindAR uses image tracking - much more stable than markers!</p>
-  </div>
-  
-  <!-- Status Indicator -->
-  <div id="status">
-    <span class="scanning">🔍 Scanning for image...</span>
-  </div>
+  <script type="module">
+    const start = async () => {
+      // Initialize MindAR
+      const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+        container: document.querySelector("#container"),
+        imageTargetSrc: 'https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/targets/card.mind'
+      });
 
-  <!-- MindAR Scene -->
-  <a-scene 
-    mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/examples/image-tracking/assets/card-example/card.mind; 
-                  autoStart: true; 
-                  uiLoading: no; 
-                  uiError: no; 
-                  uiScanning: no;"
-    color-space="sRGB" 
-    renderer="colorManagement: true, physicallyCorrectLights" 
-    vr-mode-ui="enabled: false" 
-    device-orientation-permission-ui="enabled: false">
+      const {renderer, scene, camera} = mindarThree;
 
-    <!-- Assets -->
-    <a-assets>
-      <audio id="welcome-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-      <audio id="tap-sound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
-      <audio id="magic-sound" src="https://actions.google.com/sounds/v1/cartoon/swoosh.ogg" preload="auto"></audio>
-    </a-assets>
+      // Add ambient light
+      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      scene.add(light);
 
-    <!-- Camera -->
-    <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>
+      // Create anchor - this is where AR content will appear
+      const anchor = mindarThree.addAnchor(0);
 
-    <!-- Target 0: First page of your storybook -->
-    <a-entity id="target-0" mindar-image-target="targetIndex: 0">
+      // Create a colorful rotating cube
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      const materials = [
+        new THREE.MeshPhongMaterial({color: 0xff0000}), // red
+        new THREE.MeshPhongMaterial({color: 0x00ff00}), // green
+        new THREE.MeshPhongMaterial({color: 0x0000ff}), // blue
+        new THREE.MeshPhongMaterial({color: 0xffff00}), // yellow
+        new THREE.MeshPhongMaterial({color: 0xff00ff}), // magenta
+        new THREE.MeshPhongMaterial({color: 0x00ffff})  // cyan
+      ];
+      const cube = new THREE.Mesh(geometry, materials);
+      cube.position.set(0, 0, 0);
+      anchor.group.add(cube);
+
+      // Add a sphere above the cube
+      const sphereGeometry = new THREE.SphereGeometry(0.3, 32, 32);
+      const sphereMaterial = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        emissive: 0x444444
+      });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.set(0, 1.5, 0);
+      anchor.group.add(sphere);
+
+      // Add text-like plane with instructions
+      const planeGeometry = new THREE.PlaneGeometry(2, 0.5);
+      const planeMaterial = new THREE.MeshBasicMaterial({
+        color: 0x00ff00,
+        transparent: true,
+        opacity: 0.8
+      });
+      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      plane.position.set(0, -1, 0);
+      anchor.group.add(plane);
+
+      // Animation
+      let animationFrame = 0;
+      const animate = () => {
+        animationFrame++;
+        
+        // Rotate cube
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+        
+        // Bounce sphere
+        sphere.position.y = 1.5 + Math.sin(animationFrame * 0.05) * 0.3;
+        
+        // Rotate plane
+        plane.rotation.z = Math.sin(animationFrame * 0.02) * 0.1;
+      };
+
+      // Handle target found/lost
+      anchor.onTargetFound = () => {
+        console.log("Target found!");
+        document.querySelector("#instructions").classList.add("hide");
+      };
+
+      anchor.onTargetLost = () => {
+        console.log("Target lost!");
+        document.querySelector("#instructions").classList.remove("hide");
+      };
+
+      // Start AR
+      await mindarThree.start();
       
-      <!-- Magical Castle -->
-      <a-entity id="castle-group" position="0 0 0">
-        <!-- Castle Base -->
-        <a-box 
-          id="castle"
-          class="clickable"
-          position="0 0.3 0" 
-          rotation="0 45 0"
-          scale="0.6 0.8 0.6"
-          color="#8B4513"
-          shadow>
-          <!-- Castle Tower -->
-          <a-cone 
-            position="0 0.8 0" 
-            color="#DC143C" 
-            radius-bottom="0.4" 
-            radius-top="0.05" 
-            height="0.5"
-            shadow>
-          </a-cone>
-          <!-- Window -->
-          <a-box
-            position="0 0.2 0.31"
-            scale="0.3 0.3 0.1"
-            color="#FFD700">
-          </a-box>
-        </a-box>
-      </a-entity>
+      renderer.setAnimationLoop(() => {
+        animate();
+        renderer.render(scene, camera);
+      });
+    };
 
-      <!-- Floating Magical Star -->
-      <a-entity id="star-group" position="0.8 0.6 0">
-        <a-octahedron
-          id="magic-star"
-          class="clickable"
-          radius="0.15"
-          color="#FFD700"
-          metalness="0.8"
-          roughness="0.2"
-          animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear"
-          animation__float="property: position; to: 0.8 0.8 0; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine">
-          <!-- Star glow effect -->
-          <a-sphere
-            radius="0.2"
-            color="#FFFF00"
-            opacity="0.3"
-            animation__pulse="property: scale; to: 1.5 1.5 1.5; dir: alternate; loop: true; dur: 1000">
-          </a-sphere>
-        </a-octahedron>
-      </a-entity>
-
-      <!-- Bouncing Ball -->
-      <a-sphere
-        id="magic-ball"
-        class="clickable"
-        position="-0.8 0.2 0"
-        radius="0.15"
-        color="#4169E1"
-        metalness="0.5"
-        animation__bounce="property: position; to: -0.8 0.6 0; dir: alternate; loop: true; dur: 800; easing: easeInOutQuad">
-      </a-sphere>
-
-      <!-- Story Title -->
-      <a-text 
-        value="The Magic Castle" 
-        position="0 1.2 0" 
-        align="center"
-        color="#FFFFFF"
-        width="2"
-        font="roboto"
-        shader="msdf"
-        animation="property: position; to: 0 1.3 0; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine">
-      </a-text>
-
-      <!-- Interactive Prompt -->
-      <a-text 
-        id="prompt-text"
-        value="👆 Tap the objects!" 
-        position="0 -0.3 0" 
-        align="center"
-        color="#00FF00"
-        width="1.5"
-        scale="0.8 0.8 0.8"
-        shader="msdf">
-      </a-text>
-
-      <!-- Magical Ground -->
-      <a-circle
-        position="0 0 0"
-        rotation="-90 0 0"
-        radius="1.2"
-        color="#90EE90"
-        opacity="0.7"
-        shader="flat">
-      </a-circle>
-
-      <!-- Ambient lighting -->
-      <a-entity light="type: ambient; intensity: 0.8"></a-entity>
-      <a-entity light="type: directional; intensity: 0.5" position="1 1 1"></a-entity>
-      
-    </a-entity>
-
-  </a-scene>
-
-  <!-- Interaction Scripts -->
-  <script>
-    let targetFound = false;
-    let soundPlayed = false;
-    
-    // Hide loading screen when AR is ready
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(() => {
-        document.getElementById('loading-screen').style.display = 'none';
-      }, 2000);
+    // Wait for page load and start
+    window.addEventListener('load', () => {
+      start().catch(err => {
+        console.error("Error starting MindAR:", err);
+        document.querySelector("#instructions").innerHTML = 
+          "<h3>⚠️ Camera Access Required</h3><p>Please allow camera access to use AR</p>";
+      });
     });
-
-    // Target detection
-    const target = document.querySelector('#target-0');
-    
-    target.addEventListener('targetFound', event => {
-      console.log('Target found!');
-      targetFound = true;
-      
-      // Update status
-      const status = document.getElementById('status');
-      status.innerHTML = '<span class="target-indicator">✅ Image detected! Tap to interact</span>';
-      status.classList.add('active');
-      
-      // Play welcome sound once
-      if (!soundPlayed) {
-        const welcomeSound = document.querySelector('#welcome-sound');
-        if (welcomeSound) {
-          welcomeSound.play();
-          soundPlayed = true;
-        }
-      }
-      
-      // Update instructions
-      document.querySelector('#instructions p').textContent = '✨ Magic activated! Tap the objects!';
-    });
-    
-    target.addEventListener('targetLost', event => {
-      console.log('Target lost!');
-      targetFound = false;
-      
-      // Update status
-      const status = document.getElementById('status');
-      status.innerHTML = '<span class="scanning">🔍 Scanning for image...</span>';
-      
-      document.querySelector('#instructions p').textContent = '📸 Point camera back at the target image';
-    });
-
-    // Wait for scene to load before adding click events
-    document.querySelector('a-scene').addEventListener('loaded', function() {
-      console.log('Scene loaded, adding interactions...');
-      
-      // Castle interaction
-      setTimeout(() => {
-        const castle = document.querySelector('#castle');
-        if (castle) {
-          castle.addEventListener('click', function() {
-            console.log('Castle clicked!');
-            
-            // Play sound
-            document.querySelector('#tap-sound').play();
-            
-            // Color change
-            const colors = ['#8B4513', '#FF6347', '#FFD700', '#4169E1', '#32CD32'];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            this.setAttribute('color', randomColor);
-            
-            // Spin animation
-            this.setAttribute('animation__spin', {
-              property: 'rotation',
-              to: '0 405 0',
-              dur: 1000,
-              easing: 'easeInOutQuad'
-            });
-            
-            // Update text
-            updatePromptText('🏰 Castle transformed!');
-          });
-        }
-
-        // Star interaction
-        const star = document.querySelector('#magic-star');
-        if (star) {
-          star.addEventListener('click', function() {
-            console.log('Star clicked!');
-            
-            // Play magic sound
-            document.querySelector('#magic-sound').play();
-            
-            // Burst effect
-            this.setAttribute('animation__burst', {
-              property: 'scale',
-              to: '3 3 3',
-              dur: 500,
-              easing: 'easeOutQuad'
-            });
-            
-            setTimeout(() => {
-              this.setAttribute('scale', '1 1 1');
-            }, 500);
-            
-            updatePromptText('⭐ Magic sparkle!');
-          });
-        }
-
-        // Ball interaction
-        const ball = document.querySelector('#magic-ball');
-        if (ball) {
-          ball.addEventListener('click', function() {
-            console.log('Ball clicked!');
-            
-            // Play sound
-            document.querySelector('#tap-sound').play();
-            
-            // Super jump
-            this.setAttribute('animation__superjump', {
-              property: 'position',
-              to: '-0.8 1.5 0',
-              dur: 600,
-              easing: 'easeOutQuad'
-            });
-            
-            setTimeout(() => {
-              this.setAttribute('position', '-0.8 0.2 0');
-            }, 600);
-            
-            updatePromptText('⚽ Super bounce!');
-          });
-        }
-      }, 1000);
-    });
-
-    // Helper function to update prompt text
-    function updatePromptText(message) {
-      const promptText = document.querySelector('#prompt-text');
-      promptText.setAttribute('value', message);
-      setTimeout(() => {
-        promptText.setAttribute('value', '👆 Tap the objects!');
-      }, 2000);
-    }
-
-    // Hide instructions after 15 seconds
-    setTimeout(() => {
-      const instructions = document.querySelector('#instructions');
-      instructions.style.opacity = '0';
-      instructions.style.transition = 'opacity 1s';
-      setTimeout(() => {
-        instructions.style.display = 'none';
-      }, 1000);
-    }, 15000);
-
   </script>
-
 </body>
 </html>
