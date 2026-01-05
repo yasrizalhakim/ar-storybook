@@ -70,6 +70,7 @@
   <div id="marker-info">
     📥 <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank">Download HIRO Marker Here</a>
     <br>(Print or display on another screen)
+    <br><button id="switch-camera" style="margin-top:10px; padding:8px 15px; background:#0066cc; color:white; border:none; border-radius:5px; cursor:pointer;">🔄 Switch Camera</button>
   </div>
 
   <!-- AR Scene -->
@@ -175,6 +176,13 @@
   <script>
     let markerDetected = false;
     let soundPlayed = false;
+    let currentCamera = 'environment'; // 'environment' = back camera, 'user' = front camera
+    
+    // Camera switch functionality
+    document.getElementById('switch-camera').addEventListener('click', function() {
+      currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+      location.reload(); // Reload page to apply new camera
+    });
     
     // Detect when marker is found
     const marker = document.querySelector('#hiro-marker');
